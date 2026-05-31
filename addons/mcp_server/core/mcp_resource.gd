@@ -1,5 +1,4 @@
 extends Node
-class_name MCPResource
 
 func get_uri() -> String:
     return "test://unnamed"

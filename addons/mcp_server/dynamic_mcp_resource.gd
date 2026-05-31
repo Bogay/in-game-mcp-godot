@@ -1,5 +1,4 @@
-extends "res://addons/mcp_server/core/mcp_resource.gd"
-class_name DynamicMCPResource
+extends RefCounted
 
 var _uri: String
 var _name: String
@@ -41,3 +40,14 @@ func read() -> Dictionary:
         return { "blob": Marshalls.raw_to_base64(result) }
         
     return { "text": str(result) }
+
+func to_manifest() -> Dictionary:
+    var manifest = {
+        "uri": get_uri(),
+        "name": get_name(),
+        "mimeType": get_mime_type()
+    }
+    var desc = get_description()
+    if desc != "":
+        manifest["description"] = desc
+    return manifest
