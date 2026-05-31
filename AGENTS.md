@@ -73,6 +73,13 @@ v                      v                      v
 * **Constraint:** Exposing the entire game configuration tree layout will immediately cause an LLM context overflow or network stutter.
 * **Standard:** Any tool querying topology must enforce pagination, depth-clipping, or regional spatial/group filters (e.g., limiting object collection inspection to specific ranges or node types).
 
+### D. Strict Conformance Testing & Schema Validity
+* **Constraint:** The official `@modelcontextprotocol/conformance` test suite strictly validates that all registered tools advertise a valid JSON Schema object. Tool schemas cannot be empty dictionaries (`{}`) and must specify at least `"type": "object"`.
+* **Standard:**
+  * When declaring custom tools, ensure `get_input_schema()` returns a dictionary with `"type": "object"`.
+  * The server provides safety fallback normalization on registry paths to guarantee conformance for empty or partial user-provided schemas.
+  * Run the conformance suite locally with `./run_conformance_tests.sh` to ensure any changes are fully compliant before submitting.
+
 ---
 
 ## 5. Directory & File Structure
@@ -81,6 +88,7 @@ Implementations must be organized precisely under the following structure inside
 
 ```text
 res://
+|-- run_conformance_tests.sh   # Bash script to run official conformance tests headlessly
 └── addons/
     └── mcp_server/
         |-- plugin.cfg                 # Editor plugin descriptor

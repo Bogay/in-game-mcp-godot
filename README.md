@@ -16,29 +16,31 @@ A native, high-performance, and event-driven **Model Context Protocol (MCP)** se
 
 ## 📁 File Structure
 
-The plugin operates entirely within `res://addons/mcp_server/`:
+The workspace includes the automated test script and the plugin code located under `res://addons/mcp_server/`:
 
 ```text
-res://addons/mcp_server/
-├── plugin.cfg                 # Editor plugin descriptor
-├── mcp_plugin.gd              # Editor plugin registration script
-├── mcp_server.gd              # Core Autoload managing server loops and connections
-├── dynamic_mcp_tool.gd        # Wrapper class for dynamic/inline lambdas
-│
-├── core/
-│   ├── mcp_tool.gd            # Base class interface for static script tools
-│   └── mcp_command_group.gd   # Base class for custom tool groups / namespace prefixes
-│
-├── tools/                     # Pre-packaged observability tools
-│   ├── tool_get_tree.gd       # Depth-clipping scene tree topology scanner
-│   ├── tool_inspect_node.gd   # Property inspector with variant-to-JSON serialization
-│   └── tool_get_metrics.gd    # Engine metrics and performance reporter
-│
-└── examples/                  # Integration references
-    ├── sample_registration.gd # GDScript static, dynamic lambda, and command group registration
-    ├── CSharpToolExample.cs   # C# decoupled tool example using Godot.Collections
-    ├── demo_game.tscn         # Playable 2D RPG Demo Game scene
-    └── demo_game.gd           # Demo gameplay logic and tool registrations
+res://
+├── run_conformance_tests.sh   # Bash script to run official conformance tests headlessly
+└── addons/mcp_server/
+    ├── plugin.cfg             # Editor plugin descriptor
+    ├── mcp_plugin.gd          # Editor plugin registration script
+    ├── mcp_server.gd          # Core Autoload managing server loops and connections
+    ├── dynamic_mcp_tool.gd    # Wrapper class for dynamic/inline lambdas
+    │
+    ├── core/
+    │   ├── mcp_tool.gd        # Base class interface for static script tools
+    │   └── mcp_command_group.gd # Base class for custom tool groups / namespace prefixes
+    │
+    ├── tools/                 # Pre-packaged observability tools
+    │   ├── tool_get_tree.gd   # Depth-clipping scene tree topology scanner
+    │   ├── tool_inspect_node.gd # Property inspector with variant-to-JSON serialization
+    │   └── tool_get_metrics.gd # Engine metrics and performance reporter
+    │
+    └── examples/              # Integration references
+        ├── sample_registration.gd # GDScript static, dynamic lambda, and command group registration
+        ├── CSharpToolExample.cs # C# decoupled tool example using Godot.Collections
+        ├── demo_game.tscn     # Playable 2D RPG Demo Game scene
+        └── demo_game.gd       # Demo gameplay logic and tool registrations
 ```
 
 ---
@@ -226,6 +228,26 @@ The server supports standard JSON-RPC 2.0 frames:
 | `tools/list` | Request | Discovers all available tools and parameters schemas. |
 | `tools/call` | Request | Executes a tool using arguments and yields back contents. |
 | `notifications/tools/list_changed` | Notification | Broadcasted from server when a tool is added/removed. |
+
+---
+
+## 🧪 Conformance & Testing
+
+This project integrates the official Model Context Protocol (MCP) conformance testing suite (`@modelcontextprotocol/conformance`) to ensure strict adherence to the specification.
+
+### Running Conformance Tests
+To run compliance tests locally:
+1. Ensure your system has the `flatpak` package manager configured with Godot installed (or modify the runner script to target your local executable).
+2. Execute the test runner script:
+   ```bash
+   ./run_conformance_tests.sh
+   ```
+
+The script will launch Godot in headless mode, wait for port `9090` to open, run the `@modelcontextprotocol/conformance` suite, and shut down the server process upon completion.
+
+### Tool Schema Normalization
+To prevent schema validation failures, the server automatically normalizes tool input schemas:
+- Any tool registering with an empty dictionary `{}` or missing the `"type"` field is automatically wrapped with a compliant JSON Schema object: `{ "type": "object", "properties": {}, "required": [] }`.
 
 ---
 
