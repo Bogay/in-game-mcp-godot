@@ -11,6 +11,11 @@ signal tool_called(tool_name: String, arguments: Dictionary, response: Dictionar
 @export var port: int = 9090
 @export var bind_address: String = "127.0.0.1"
 @export var auto_start: bool = true
+@export var conformance_mode: bool = false:
+    set(val):
+        conformance_mode = val
+        if protocol_handler:
+            protocol_handler.conformance_mode = val
 
 # Helper component preloads
 const MCPToolRegistryClass = preload("res://addons/mcp_server/core/mcp_tool_registry.gd")
@@ -40,11 +45,18 @@ var connected_peers: Array:
         return []
 
 func _ready() -> void:
+    protocol_handler.conformance_mode = conformance_mode
+    
     # 1. Wire internal component signals up to the Autoload's public signals
     tool_registry.tools_changed.connect(func(): tools_changed.emit())
     protocol_handler.tool_called.connect(
         func(tool_name: String, arguments: Dictionary, response: Dictionary):
             tool_called.emit(tool_name, arguments, response)
+    )
+    protocol_handler.request_sent.connect(
+        func(session_id: String, payload: Dictionary):
+            if active_transport:
+                active_transport.send_to_client(session_id, payload)
     )
     tools_changed.connect(_on_tools_changed)
     
@@ -127,3 +139,38 @@ func _on_tools_changed() -> void:
 func _broadcast(message: Dictionary) -> void:
     if active_transport:
         active_transport.broadcast(message)
+
+# --- Conformance and Utility APIs ---
+
+## Sends a log message notification to all connected clients
+func send_log_message(level: String, data: Variant, logger: String = "") -> void:
+    var params = {
+        "level": level,
+        "data": data
+    }
+    if logger != "":
+        params["logger"] = logger
+    var msg = {
+        "jsonrpc": "2.0",
+        "method": "notifications/message",
+        "params": params
+    }
+    _broadcast(msg)
+
+## Sends a progress notification to all connected clients
+func send_progress(progress_token: Variant, progress: float, total: float) -> void:
+    var msg = {
+        "jsonrpc": "2.0",
+        "method": "notifications/progress",
+        "params": {
+            "progressToken": progress_token,
+            "progress": progress,
+            "total": total
+        }
+    }
+    _broadcast(msg)
+
+## Sends a request message to a client session and awaits the response
+func send_client_request(session_id: String, method: String, params: Dictionary) -> Dictionary:
+    var result = await protocol_handler.send_request(session_id, method, params)
+    return result

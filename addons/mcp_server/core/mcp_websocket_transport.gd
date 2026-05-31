@@ -65,3 +65,11 @@ func broadcast(message: Dictionary) -> void:
     for peer in connected_peers:
         if peer.get_ready_state() == WebSocketPeer.STATE_OPEN:
             peer.send_text(text)
+
+func send_to_client(session_id: String, message: Dictionary) -> void:
+    var text = JSON.stringify(message)
+    for peer in connected_peers:
+        if str(peer.get_instance_id()) == session_id:
+            if peer.get_ready_state() == WebSocketPeer.STATE_OPEN:
+                peer.send_text(text)
+            break

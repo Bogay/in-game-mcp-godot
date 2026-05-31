@@ -39,7 +39,9 @@ func poll() -> void:
                 "content_length": 0,
                 "method": "",
                 "path": "",
-                "session_id": ""
+                "session_id": "",
+                "host": "",
+                "origin": ""
             })
             
     # 2. Poll and parse pending HTTP client request streams
@@ -67,6 +69,18 @@ func poll() -> void:
                 _parse_http_header(client, header_str)
                 
         if client.header_parsed:
+            if not _validate_host_and_origin(client):
+                var forbidden_resp = (
+                    "HTTP/1.1 403 Forbidden\r\n" +
+                    "Access-Control-Allow-Origin: *\r\n" +
+                    "Content-Length: 9\r\n" +
+                    "Connection: close\r\n\r\n" +
+                    "Forbidden"
+                )
+                socket.put_data(forbidden_resp.to_utf8_buffer())
+                socket.disconnect_from_host()
+                continue
+                
             var is_options = (client.method == "OPTIONS")
             var is_get_sse = (client.method == "GET" and client.path.begins_with("/sse"))
             var is_post_msg = (client.method == "POST" and (client.path.begins_with("/message") or client.path.begins_with("/sse")))
@@ -133,6 +147,10 @@ func _parse_http_header(client: Dictionary, header_str: String) -> void:
                 client.content_length = int(val)
             elif key == "mcp-session-id":
                 client.session_id = val
+            elif key == "host":
+                client.host = val
+            elif key == "origin":
+                client.origin = val
 
 func _send_http_options_response(socket: StreamPeerTCP) -> void:
     var resp = (
@@ -280,3 +298,48 @@ func _send_to_sse(session_id: String, payload: Variant) -> void:
 
 func broadcast(message: Dictionary) -> void:
     _send_to_sse("", message)
+
+func send_to_client(session_id: String, message: Dictionary) -> void:
+    _send_to_sse(session_id, message)
+
+func _validate_host_and_origin(client: Dictionary) -> bool:
+    var host_val = client.get("host", "") as String
+    var origin_val = client.get("origin", "") as String
+    
+    if host_val != "" and not _is_valid_localhost_value(host_val):
+        return false
+    if origin_val != "" and not _is_valid_localhost_value(origin_val):
+        return false
+        
+    return true
+
+func _is_valid_localhost_value(val: String) -> bool:
+    var clean = val.strip_edges().to_lower()
+    if clean == "":
+        return true
+        
+    # Strip scheme if present (e.g. Origin: http://localhost:9090)
+    if clean.begins_with("http://"):
+        clean = clean.substr(7)
+    elif clean.begins_with("https://"):
+        clean = clean.substr(8)
+        
+    # Extract host part (remove port)
+    var host_part = clean
+    if clean.begins_with("["):
+        var close_bracket = clean.find("]")
+        if close_bracket != -1:
+            host_part = clean.substr(0, close_bracket + 1)
+        else:
+            host_part = clean
+    else:
+        var colon = clean.find(":")
+        if colon != -1:
+            host_part = clean.substr(0, colon)
+            
+    # Remove brackets for comparison if they exist
+    var host_unbracketed = host_part
+    if host_part.begins_with("[") and host_part.ends_with("]"):
+        host_unbracketed = host_part.substr(1, host_part.length() - 2)
+        
+    return host_part == "localhost" or host_part == "127.0.0.1" or host_part == "[::1]" or host_part == "::1" or host_unbracketed == "::1"

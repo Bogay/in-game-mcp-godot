@@ -12,3 +12,6 @@ func stop() -> void:
 
 func poll() -> void:
     pass
+
+func send_to_client(_session_id: String, _message: Dictionary) -> void:
+    pass

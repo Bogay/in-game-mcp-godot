@@ -12,9 +12,9 @@ trap cleanup EXIT
 
 echo "Starting Godot server in headless mode..."
 if command -v godot &> /dev/null; then
-    godot --headless --path . > godot_test_run.log 2>&1 &
+    godot --headless --path . res://addons/mcp_server/examples/conformance_test_runner.tscn > godot_test_run.log 2>&1 &
 elif command -v flatpak &> /dev/null && flatpak list | grep -q org.godotengine.Godot; then
-    flatpak run org.godotengine.Godot --headless --path . > godot_test_run.log 2>&1 &
+    flatpak run org.godotengine.Godot --headless --path . res://addons/mcp_server/examples/conformance_test_runner.tscn > godot_test_run.log 2>&1 &
 else
     echo "Error: Neither 'godot' binary nor 'org.godotengine.Godot' flatpak was found."
     exit 1
