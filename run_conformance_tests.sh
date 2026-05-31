@@ -11,7 +11,14 @@ cleanup() {
 trap cleanup EXIT
 
 echo "Starting Godot server in headless mode..."
-flatpak run org.godotengine.Godot --headless --path . &
+if command -v godot &> /dev/null; then
+    godot --headless --path . &
+elif command -v flatpak &> /dev/null && flatpak list | grep -q org.godotengine.Godot; then
+    flatpak run org.godotengine.Godot --headless --path . &
+else
+    echo "Error: Neither 'godot' binary nor 'org.godotengine.Godot' flatpak was found."
+    exit 1
+fi
 GODOT_PID=$!
 
 # Wait for server to start up (listening on port 9090)
