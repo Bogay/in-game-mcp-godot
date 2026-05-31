@@ -49,11 +49,19 @@ class ProxyMCPTool extends MCPTool:
         return "No description."
         
     func get_input_schema() -> Dictionary:
+        var schema: Dictionary = {}
         if _base_tool.has_method("get_input_schema"):
-            return _base_tool.get_input_schema()
+            schema = _base_tool.get_input_schema()
         elif _base_tool.has_method("GetInputSchema"):
-            return _base_tool.GetInputSchema()
-        return { "type": "object", "properties": {}, "required": [] }
+            schema = _base_tool.GetInputSchema()
+        else:
+            return { "type": "object", "properties": {}, "required": [] }
+            
+        if schema.is_empty() or not schema.has("type"):
+            var full_schema = { "type": "object", "properties": {}, "required": [] }
+            full_schema.merge(schema, true)
+            return full_schema
+        return schema
         
     func execute(args: Dictionary) -> Dictionary:
         if _base_tool.has_method("execute"):
@@ -589,11 +597,19 @@ func _get_duck_description(tool: Object) -> String:
     return "No description."
 
 func _get_duck_input_schema(tool: Object) -> Dictionary:
+    var schema: Dictionary = {}
     if tool.has_method("get_input_schema"):
-        return tool.get_input_schema()
+        schema = tool.get_input_schema()
     elif tool.has_method("GetInputSchema"):
-        return tool.GetInputSchema()
-    return { "type": "object", "properties": {}, "required": [] }
+        schema = tool.GetInputSchema()
+    else:
+        return { "type": "object", "properties": {}, "required": [] }
+        
+    if schema.is_empty() or not schema.has("type"):
+        var full_schema = { "type": "object", "properties": {}, "required": [] }
+        full_schema.merge(schema, true)
+        return full_schema
+    return schema
 
 func _get_duck_manifest(tool: Object) -> Dictionary:
     if tool.has_method("to_manifest"):

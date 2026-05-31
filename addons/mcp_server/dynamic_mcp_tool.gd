@@ -19,6 +19,10 @@ func get_description() -> String:
     return _description
 
 func get_input_schema() -> Dictionary:
+    if _schema.is_empty() or not _schema.has("type"):
+        var full_schema = { "type": "object", "properties": {}, "required": [] }
+        full_schema.merge(_schema, true)
+        return full_schema
     return _schema
 
 func execute(args: Dictionary) -> Dictionary:
