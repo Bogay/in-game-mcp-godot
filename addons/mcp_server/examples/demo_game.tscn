@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://b8jg2x1m2y3q1"]
+
+[ext_resource type="Script" uid="uid://dfl56vlyctp4w" path="res://addons/mcp_server/examples/demo_game.gd" id="1_demo"]
+
+[node name="DemoGame" type="Node2D" unique_id=1666049349]
+script = ExtResource("1_demo")

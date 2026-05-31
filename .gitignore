@@ -1,0 +1,12 @@
+# Godot-specific files
+.godot/
+*.translation
+
+# Mono-specific files
+.mono/
+data_*/
+mono_crash.*.json
+
+# Log files
+*.log
+mcp_debug.log
