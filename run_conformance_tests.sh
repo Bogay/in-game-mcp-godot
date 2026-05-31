@@ -12,9 +12,9 @@ trap cleanup EXIT
 
 echo "Starting Godot server in headless mode..."
 if command -v godot &> /dev/null; then
-    godot --headless --path . &
+    godot --headless --path . > godot_test_run.log 2>&1 &
 elif command -v flatpak &> /dev/null && flatpak list | grep -q org.godotengine.Godot; then
-    flatpak run org.godotengine.Godot --headless --path . &
+    flatpak run org.godotengine.Godot --headless --path . > godot_test_run.log 2>&1 &
 else
     echo "Error: Neither 'godot' binary nor 'org.godotengine.Godot' flatpak was found."
     exit 1
@@ -37,8 +37,15 @@ echo "Godot server started successfully on port 9090."
 echo "Running Model Context Protocol conformance tests..."
 
 # Run the @modelcontextprotocol/conformance server tests
-npx -y @modelcontextprotocol/conformance server --url http://127.0.0.1:9090/sse
+npx conformance server --url http://127.0.0.1:9090/sse
 TEST_EXIT_CODE=$?
+
+if [ $TEST_EXIT_CODE -ne 0 ]; then
+    echo "=================== GODOT SERVER LOGS ==================="
+    cat godot_test_run.log
+    echo "========================================================="
+fi
 
 echo "Tests completed with exit code: $TEST_EXIT_CODE"
 exit $TEST_EXIT_CODE
+

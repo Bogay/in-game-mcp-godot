@@ -1,5 +1,4 @@
 extends RefCounted
-class_name MCPToolRegistry
 
 signal tools_changed()
 
