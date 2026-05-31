@@ -50,6 +50,21 @@ func _ready() -> void:
     # Registering the group will register 'restart_tool' under the name "admin/restart_game"
     MCPServer.register_command_group(admin_group)
     
+    # 4. Register a dynamic resource demonstrating state observation
+    MCPServer.register_dynamic_resource(
+        "godot://game/status",
+        "Godot Game Status",
+        "application/json",
+        "Live status metrics of the Godot engine instance.",
+        func() -> String:
+            var status = {
+                "fps": Engine.get_frames_per_second(),
+                "static_memory": OS.get_static_memory_usage(),
+                "time": Time.get_time_string_from_system()
+            }
+            return JSON.stringify(status)
+    )
+    
     print("[MCP Example] Sample registrations completed successfully.")
 
 func _on_spawn_item(args: Dictionary) -> Dictionary:

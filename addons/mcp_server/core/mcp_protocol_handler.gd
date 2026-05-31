@@ -7,6 +7,7 @@ signal request_sent(session_id: String, payload: Dictionary)
 var handshake_states: Dictionary = {}
 
 var tool_registry: RefCounted
+var resource_registry: RefCounted
 var conformance_mode: bool = false
 
 # Client-bound request tracking
@@ -18,8 +19,9 @@ class Promise extends RefCounted:
     func resolve(result: Dictionary) -> void:
         completed.emit(result)
 
-func _init(p_tool_registry: RefCounted) -> void:
+func _init(p_tool_registry: RefCounted, p_resource_registry: RefCounted) -> void:
     tool_registry = p_tool_registry
+    resource_registry = p_resource_registry
 
 ## Sends a request from server to a specific client session and awaits the response
 func send_request(session_id: String, method: String, params: Dictionary) -> Dictionary:
@@ -101,14 +103,14 @@ func _process_single_message(session_id: String, message: Dictionary) -> Variant
             var capabilities = {
                 "tools": {
                     "listChanged": true
+                },
+                "resources": {
+                    "subscribe": true,
+                    "listChanged": true
                 }
             }
             # Advertise additional capabilities in conformance mode to pass all checks
             if conformance_mode:
-                capabilities["resources"] = {
-                    "subscribe": true,
-                    "listChanged": true
-                }
                 capabilities["prompts"] = {
                     "listChanged": true
                 }
@@ -223,6 +225,10 @@ func _process_single_message(session_id: String, message: Dictionary) -> Variant
                         "mimeType": "text/plain"
                     }
                 ]
+            
+            for manifest in resource_registry.cached_manifests:
+                res_list.append(manifest)
+                
             return {
                 "jsonrpc": "2.0",
                 "id": id,
@@ -261,7 +267,21 @@ func _process_single_message(session_id: String, message: Dictionary) -> Variant
                         "mimeType": "text/plain",
                         "text": "Template content for parameter " + param
                     }]
-                    
+            
+            if contents.is_empty() and resource_registry.available_resources.has(uri):
+                var res = resource_registry.available_resources[uri]
+                var raw_content = await resource_registry.read_duck_resource(res)
+                var mime_type = resource_registry._get_duck_mime_type(res)
+                var content_entry = {
+                    "uri": uri,
+                    "mimeType": mime_type
+                }
+                if raw_content.has("text"):
+                    content_entry["text"] = raw_content["text"]
+                elif raw_content.has("blob"):
+                    content_entry["blob"] = raw_content["blob"]
+                contents = [content_entry]
+                
             return {
                 "jsonrpc": "2.0",
                 "id": id,

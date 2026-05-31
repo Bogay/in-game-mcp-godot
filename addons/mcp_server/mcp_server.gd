@@ -6,6 +6,7 @@ extends Node
 
 signal tools_changed()
 signal tool_called(tool_name: String, arguments: Dictionary, response: Dictionary)
+signal resources_changed()
 
 @export_enum("WebSocket", "SSE") var transport: String = "SSE"
 @export var port: int = 9090
@@ -19,13 +20,15 @@ signal tool_called(tool_name: String, arguments: Dictionary, response: Dictionar
 
 # Helper component preloads
 const MCPToolRegistryClass = preload("res://addons/mcp_server/core/mcp_tool_registry.gd")
+const MCPResourceRegistryClass = preload("res://addons/mcp_server/core/mcp_resource_registry.gd")
 const MCPProtocolHandlerClass = preload("res://addons/mcp_server/core/mcp_protocol_handler.gd")
 const MCPWebSocketTransportClass = preload("res://addons/mcp_server/core/mcp_websocket_transport.gd")
 const MCPSSETransportClass = preload("res://addons/mcp_server/core/mcp_sse_transport.gd")
 
 ## Core Sub-components
 var tool_registry = MCPToolRegistryClass.new()
-var protocol_handler = MCPProtocolHandlerClass.new(tool_registry)
+var resource_registry = MCPResourceRegistryClass.new()
+var protocol_handler = MCPProtocolHandlerClass.new(tool_registry, resource_registry)
 var active_transport: RefCounted
 
 ## Backwards compatibility accessors for external tools and scenes
@@ -49,6 +52,8 @@ func _ready() -> void:
     
     # 1. Wire internal component signals up to the Autoload's public signals
     tool_registry.tools_changed.connect(func(): tools_changed.emit())
+    resource_registry.resources_changed.connect(func(): resources_changed.emit())
+    
     protocol_handler.tool_called.connect(
         func(tool_name: String, arguments: Dictionary, response: Dictionary):
             tool_called.emit(tool_name, arguments, response)
@@ -59,6 +64,7 @@ func _ready() -> void:
                 active_transport.send_to_client(session_id, payload)
     )
     tools_changed.connect(_on_tools_changed)
+    resources_changed.connect(_on_resources_changed)
     
     # 2. Automatically start the server if configured
     if auto_start:
@@ -135,6 +141,29 @@ func _on_tools_changed() -> void:
         "method": "notifications/tools/list_changed"
     }
     _broadcast(notification)
+
+func _on_resources_changed() -> void:
+    var notification = {
+        "jsonrpc": "2.0",
+        "method": "notifications/resources/list_changed"
+    }
+    _broadcast(notification)
+
+## Registers a custom MCPResource script object in the registry
+func register_resource(resource: Object) -> void:
+    resource_registry.register_resource(resource)
+
+## Unregisters an MCPResource object
+func unregister_resource(resource: Object) -> void:
+    resource_registry.unregister_resource(resource)
+
+## Unregisters a resource by its URI
+func unregister_resource_uri(uri: String) -> void:
+    resource_registry.unregister_uri(uri)
+
+## Registers a resource dynamically using an inline read callback lambda
+func register_dynamic_resource(uri: String, name: String, mime_type: String, desc: String, read_callback: Callable) -> void:
+    resource_registry.register_dynamic_resource(uri, name, mime_type, desc, read_callback)
 
 func _broadcast(message: Dictionary) -> void:
     if active_transport:
