@@ -122,8 +122,8 @@ func unregister_tool_name(tool_name: String) -> void:
     tool_registry.unregister_tool_name(tool_name)
 
 ## Thin wrapper registry for lambdas and inline functions
-func register_function(tool_name: String, desc: String, schema: Dictionary, target: Callable) -> void:
-    tool_registry.register_function(tool_name, desc, schema, target)
+func register_function(tool_name: String, desc: String, schema: Dictionary, target: Callable, metadata: Dictionary = {}) -> void:
+    tool_registry.register_function(tool_name, desc, schema, target, metadata)
 
 ## Registers all child tools found within an MCPCommandGroup
 func register_command_group(group: MCPCommandGroup) -> void:

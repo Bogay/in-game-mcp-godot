@@ -84,11 +84,11 @@ func unregister_tool_name(tool_name: String) -> void:
         available_tools.erase(tool_name)
         _rebuild_manifests()
 
-func register_function(tool_name: String, desc: String, schema: Dictionary, target: Callable) -> void:
+func register_function(tool_name: String, desc: String, schema: Dictionary, target: Callable, metadata: Dictionary = {}) -> void:
     if not _validate_tool_name(tool_name):
         push_error("[MCP Tool Registry] Function registration failed. Tool name '%s' must match '^[a-zA-Z0-9_-]{1,64}$'." % tool_name)
         return
-    var dynamic_tool = DynamicMCPTool.new(tool_name, desc, schema, target)
+    var dynamic_tool = DynamicMCPTool.new(tool_name, desc, schema, target, metadata)
     available_tools[tool_name] = dynamic_tool
     cached_manifests.append(dynamic_tool.to_manifest())
     tools_changed.emit()
@@ -167,11 +167,25 @@ func _get_duck_manifest(tool: Object) -> Dictionary:
         return tool.to_manifest()
     elif tool.has_method("ToManifest"):
         return tool.ToManifest()
-    return {
+        
+    var manifest = {
         "name": _get_duck_tool_name(tool),
         "description": _get_duck_description(tool),
         "inputSchema": _get_duck_input_schema(tool)
     }
+    
+    var meta = {}
+    if tool.has_method("get_tool_metadata"):
+        meta = tool.get_tool_metadata()
+    elif tool.has_method("GetToolMetadata"):
+        meta = tool.GetToolMetadata()
+    elif "tool_metadata" in tool:
+        meta = tool.tool_metadata
+        
+    if not meta.is_empty():
+        manifest["_meta"] = meta
+        
+    return manifest
 
 func execute_duck_tool(tool: Object, args: Dictionary) -> Dictionary:
     if tool.has_method("execute"):
