@@ -3,6 +3,11 @@ extends Node
 func _ready() -> void:
     print("[MCP App Demo] Starting MCP Apps Demonstration environment...")
     
+    # Bind to 0.0.0.0 to allow connection from the host machine via the VM IP
+    MCPServer.bind_address = "0.0.0.0"
+    MCPServer.stop_server()
+    MCPServer.start_server()
+    
     # 1. Register the MCP UI resource
     MCPServer.register_dynamic_resource(
         "ui://demo/panel",

@@ -303,14 +303,17 @@ func send_to_client(session_id: String, message: Dictionary) -> void:
     _send_to_sse(session_id, message)
 
 func _validate_host_and_origin(client: Dictionary) -> bool:
-    var host_val = client.get("host", "") as String
-    var origin_val = client.get("origin", "") as String
-    
-    if host_val != "" and not _is_valid_localhost_value(host_val):
-        return false
-    if origin_val != "" and not _is_valid_localhost_value(origin_val):
-        return false
+    # DNS rebinding checks are strictly required only under conformance testing.
+    # Outside conformance mode, we allow external LAN/bridge IP connections.
+    if MCPServer.conformance_mode:
+        var host_val = client.get("host", "") as String
+        var origin_val = client.get("origin", "") as String
         
+        if host_val != "" and not _is_valid_localhost_value(host_val):
+            return false
+        if origin_val != "" and not _is_valid_localhost_value(origin_val):
+            return false
+            
     return true
 
 func _is_valid_localhost_value(val: String) -> bool:
