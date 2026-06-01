@@ -78,6 +78,7 @@ func poll() -> void:
                     "Access-Control-Allow-Origin: " + origin + "\r\n" +
                     "Access-Control-Allow-Headers: *\r\n" +
                     "Access-Control-Allow-Methods: *\r\n" +
+                    "Access-Control-Expose-Headers: Mcp-Session-Id\r\n" +
                     "Access-Control-Allow-Credentials: true\r\n" +
                     "Content-Length: 9\r\n" +
                     "Connection: close\r\n\r\n" +
@@ -112,6 +113,7 @@ func poll() -> void:
                     "Access-Control-Allow-Origin: " + origin + "\r\n" +
                     "Access-Control-Allow-Headers: *\r\n" +
                     "Access-Control-Allow-Methods: *\r\n" +
+                    "Access-Control-Expose-Headers: Mcp-Session-Id\r\n" +
                     "Access-Control-Allow-Credentials: true\r\n" +
                     "Content-Length: 9\r\n" +
                     "Connection: close\r\n\r\n" +
@@ -173,6 +175,7 @@ func _send_http_options_response(socket: StreamPeerTCP, client: Dictionary) -> v
         "Access-Control-Allow-Origin: " + origin + "\r\n" +
         "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n" +
         "Access-Control-Allow-Headers: *\r\n" +
+        "Access-Control-Expose-Headers: Mcp-Session-Id\r\n" +
         "Access-Control-Allow-Credentials: true\r\n" +
         "Content-Length: 0\r\n" +
         "Connection: close\r\n\r\n"
@@ -214,6 +217,7 @@ func _upgrade_to_sse(client: Dictionary) -> void:
         "Access-Control-Allow-Origin: " + origin + "\r\n" +
         "Access-Control-Allow-Headers: *\r\n" +
         "Access-Control-Allow-Methods: *\r\n" +
+        "Access-Control-Expose-Headers: Mcp-Session-Id\r\n" +
         "Access-Control-Allow-Credentials: true\r\n\r\n"
     )
     socket.put_data(resp.to_utf8_buffer())
@@ -243,6 +247,7 @@ func _handle_http_post_async(client: Dictionary, body_str: String) -> void:
                 "Access-Control-Allow-Origin: " + origin + "\r\n" +
                 "Access-Control-Allow-Headers: *\r\n" +
                 "Access-Control-Allow-Methods: *\r\n" +
+                "Access-Control-Expose-Headers: Mcp-Session-Id\r\n" +
                 "Access-Control-Allow-Credentials: true\r\n" +
                 "Content-Length: 35\r\n" +
                 "Connection: close\r\n\r\n" +
@@ -258,6 +263,7 @@ func _handle_http_post_async(client: Dictionary, body_str: String) -> void:
             "Access-Control-Allow-Origin: " + origin + "\r\n" +
             "Access-Control-Allow-Headers: *\r\n" +
             "Access-Control-Allow-Methods: *\r\n" +
+            "Access-Control-Expose-Headers: Mcp-Session-Id\r\n" +
             "Access-Control-Allow-Credentials: true\r\n" +
             "Content-Length: 0\r\n" +
             "Connection: close\r\n\r\n"
@@ -299,6 +305,7 @@ func _send_http_post_response(socket: StreamPeerTCP, session_id: String, respons
         "Access-Control-Allow-Origin: " + origin + "\r\n" +
         "Access-Control-Allow-Headers: *\r\n" +
         "Access-Control-Allow-Methods: *\r\n" +
+        "Access-Control-Expose-Headers: Mcp-Session-Id\r\n" +
         "Access-Control-Allow-Credentials: true\r\n" +
         "Connection: close\r\n\r\n" +
         resp_body
