@@ -70,9 +70,15 @@ func poll() -> void:
                 
         if client.header_parsed:
             if not _validate_host_and_origin(client):
+                var origin = client.get("origin", "*") as String
+                if origin == "":
+                    origin = "*"
                 var forbidden_resp = (
                     "HTTP/1.1 403 Forbidden\r\n" +
-                    "Access-Control-Allow-Origin: *\r\n" +
+                    "Access-Control-Allow-Origin: " + origin + "\r\n" +
+                    "Access-Control-Allow-Headers: *\r\n" +
+                    "Access-Control-Allow-Methods: *\r\n" +
+                    "Access-Control-Allow-Credentials: true\r\n" +
                     "Content-Length: 9\r\n" +
                     "Connection: close\r\n\r\n" +
                     "Forbidden"
@@ -86,7 +92,7 @@ func poll() -> void:
             var is_post_msg = (client.method == "POST" and (client.path.begins_with("/message") or client.path.begins_with("/sse")))
             
             if is_options:
-                _send_http_options_response(socket)
+                _send_http_options_response(socket, client)
                 continue
             elif is_get_sse:
                 _upgrade_to_sse(client)
@@ -98,9 +104,15 @@ func poll() -> void:
                     _handle_http_post_async(client, body_str)
                     continue
             else:
+                var origin = client.get("origin", "*") as String
+                if origin == "":
+                    origin = "*"
                 var err_resp = (
                     "HTTP/1.1 404 Not Found\r\n" +
-                    "Access-Control-Allow-Origin: *\r\n" +
+                    "Access-Control-Allow-Origin: " + origin + "\r\n" +
+                    "Access-Control-Allow-Headers: *\r\n" +
+                    "Access-Control-Allow-Methods: *\r\n" +
+                    "Access-Control-Allow-Credentials: true\r\n" +
                     "Content-Length: 9\r\n" +
                     "Connection: close\r\n\r\n" +
                     "Not Found"
@@ -152,12 +164,16 @@ func _parse_http_header(client: Dictionary, header_str: String) -> void:
             elif key == "origin":
                 client.origin = val
 
-func _send_http_options_response(socket: StreamPeerTCP) -> void:
+func _send_http_options_response(socket: StreamPeerTCP, client: Dictionary) -> void:
+    var origin = client.get("origin", "*") as String
+    if origin == "":
+        origin = "*"
     var resp = (
         "HTTP/1.1 204 No Content\r\n" +
-        "Access-Control-Allow-Origin: *\r\n" +
+        "Access-Control-Allow-Origin: " + origin + "\r\n" +
         "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n" +
-        "Access-Control-Allow-Headers: Content-Type\r\n" +
+        "Access-Control-Allow-Headers: *\r\n" +
+        "Access-Control-Allow-Credentials: true\r\n" +
         "Content-Length: 0\r\n" +
         "Connection: close\r\n\r\n"
     )
@@ -186,14 +202,19 @@ func _upgrade_to_sse(client: Dictionary) -> void:
     if session_id == "":
         session_id = str(randi() % 1000000)
         
+    var origin = client.get("origin", "*") as String
+    if origin == "":
+        origin = "*"
+        
     var resp = (
         "HTTP/1.1 200 OK\r\n" +
         "Content-Type: text/event-stream\r\n" +
         "Cache-Control: no-cache\r\n" +
         "Connection: keep-alive\r\n" +
-        "Access-Control-Allow-Origin: *\r\n" +
+        "Access-Control-Allow-Origin: " + origin + "\r\n" +
         "Access-Control-Allow-Headers: *\r\n" +
-        "Access-Control-Allow-Methods: *\r\n\r\n"
+        "Access-Control-Allow-Methods: *\r\n" +
+        "Access-Control-Allow-Credentials: true\r\n\r\n"
     )
     socket.put_data(resp.to_utf8_buffer())
     
@@ -211,13 +232,18 @@ func _handle_http_post_async(client: Dictionary, body_str: String) -> void:
     var session_id = _get_session_id(client)
     var is_legacy = path.begins_with("/message")
     
+    var origin = client.get("origin", "*") as String
+    if origin == "":
+        origin = "*"
+        
     if is_legacy:
         if session_id == "" or not sse_sessions.has(session_id):
             var err_resp = (
                 "HTTP/1.1 400 Bad Request\r\n" +
-                "Access-Control-Allow-Origin: *\r\n" +
+                "Access-Control-Allow-Origin: " + origin + "\r\n" +
                 "Access-Control-Allow-Headers: *\r\n" +
                 "Access-Control-Allow-Methods: *\r\n" +
+                "Access-Control-Allow-Credentials: true\r\n" +
                 "Content-Length: 35\r\n" +
                 "Connection: close\r\n\r\n" +
                 "Missing or invalid SSE session_id\n"
@@ -229,9 +255,10 @@ func _handle_http_post_async(client: Dictionary, body_str: String) -> void:
         # Respond immediately with 202 Accepted for legacy SSE POSTs
         var resp = (
             "HTTP/1.1 202 Accepted\r\n" +
-            "Access-Control-Allow-Origin: *\r\n" +
+            "Access-Control-Allow-Origin: " + origin + "\r\n" +
             "Access-Control-Allow-Headers: *\r\n" +
             "Access-Control-Allow-Methods: *\r\n" +
+            "Access-Control-Allow-Credentials: true\r\n" +
             "Content-Length: 0\r\n" +
             "Connection: close\r\n\r\n"
         )
@@ -255,10 +282,10 @@ func _handle_http_post_async(client: Dictionary, body_str: String) -> void:
             session_id,
             body_str,
             func(response_text: String):
-                _send_http_post_response(socket, session_id, response_text)
+                _send_http_post_response(socket, session_id, response_text, origin)
         )
 
-func _send_http_post_response(socket: StreamPeerTCP, session_id: String, response_text: String) -> void:
+func _send_http_post_response(socket: StreamPeerTCP, session_id: String, response_text: String, origin: String = "*") -> void:
     var resp_body = response_text
     var status_line = "HTTP/1.1 200 OK\r\n"
     if resp_body == "":
@@ -269,9 +296,10 @@ func _send_http_post_response(socket: StreamPeerTCP, session_id: String, respons
         "Content-Type: application/json\r\n" +
         "Content-Length: " + str(resp_body.to_utf8_buffer().size()) + "\r\n" +
         "Mcp-Session-Id: " + session_id + "\r\n" +
-        "Access-Control-Allow-Origin: *\r\n" +
+        "Access-Control-Allow-Origin: " + origin + "\r\n" +
         "Access-Control-Allow-Headers: *\r\n" +
         "Access-Control-Allow-Methods: *\r\n" +
+        "Access-Control-Allow-Credentials: true\r\n" +
         "Connection: close\r\n\r\n" +
         resp_body
     )
