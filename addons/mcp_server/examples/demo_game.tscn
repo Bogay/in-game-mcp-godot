@@ -1,6 +1,11 @@
 [gd_scene format=3 uid="uid://b8jg2x1m2y3q1"]
 
 [ext_resource type="Script" uid="uid://dfl56vlyctp4w" path="res://addons/mcp_server/examples/demo_game.gd" id="1_demo"]
+[ext_resource type="PackedScene" uid="uid://bagud6bjheedt" path="res://addons/mcp_server/examples/mcp_app_demo.tscn" id="2_mcp_app_demo"]
 
 [node name="DemoGame" type="Node2D" unique_id=1666049349]
 script = ExtResource("1_demo")
+
+[node name="MCPAppDemo" parent="." unique_id=653977917 instance=ExtResource("2_mcp_app_demo")]
+bootstrap_server = false
+register_demo_tools = false

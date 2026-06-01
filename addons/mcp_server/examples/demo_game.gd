@@ -80,6 +80,7 @@ func _ready() -> void:
     
     # 8. Register Custom Demo Tools
     _register_demo_mcp_tools()
+    _register_mcp_app_bridge_tools()
     
     _log_message("System: Game initialized and MCP Server active.")
 
@@ -420,4 +421,70 @@ func _register_demo_mcp_tools() -> void:
                 "isError": false,
                 "content": [{"type": "text", "text": "Spawned enemy '%s' at (%d, %d)." % [name, tx, ty]}]
             }
+    )
+
+func _register_mcp_app_bridge_tools() -> void:
+    var ui_meta = {
+        "ui": {
+            "resourceUri": "ui://demo/panel"
+        }
+    }
+
+    MCPServer.register_function(
+        "app_demo_spawn",
+        "Spawns an enemy in the active RPG demo scene.",
+        {
+            "type": "object",
+            "properties": {
+                "enemy_type": { "type": "string", "enum": ["goblin", "orc", "dragon"], "default": "goblin" }
+            }
+        },
+        func(args: Dictionary) -> Dictionary:
+            var enemy_type = str(args.get("enemy_type", "goblin"))
+            var spawn_name = "%s_%d" % [enemy_type.capitalize(), Time.get_ticks_msec() % 10000]
+            var tx = randf_range(20.0, play_area_width - 20.0)
+            var ty = randf_range(20.0, screen_height - 20.0)
+
+            call_deferred("_spawn_enemy_internal", spawn_name, Vector2(tx, ty))
+            _log_message("MCP App: Spawned '%s' at (%d, %d)." % [spawn_name, tx, ty])
+            return {
+                "isError": false,
+                "content": [{"type": "text", "text": "Spawned enemy '%s'." % spawn_name}]
+            },
+        ui_meta
+    )
+
+    MCPServer.register_function(
+        "app_demo_heal",
+        "Restores player health in the active RPG demo scene.",
+        {},
+        func(_args: Dictionary) -> Dictionary:
+            var before = player_health
+            player_health = player_max_health
+            _log_message("MCP App: Player healed to full health (%d -> %d)." % [before, player_health])
+            return {
+                "isError": false,
+                "content": [{"type": "text", "text": "Player health restored to %d." % player_health}]
+            },
+        ui_meta
+    )
+
+    MCPServer.register_function(
+        "app_demo_slowmo",
+        "Adjusts game time scale in the active RPG demo scene.",
+        {
+            "type": "object",
+            "properties": {
+                "scale": { "type": "number", "default": 0.5 }
+            }
+        },
+        func(args: Dictionary) -> Dictionary:
+            var scale = clampf(float(args.get("scale", 0.5)), 0.05, 3.0)
+            Engine.time_scale = scale
+            _log_message("MCP App: Set time scale to %.2f." % scale)
+            return {
+                "isError": false,
+                "content": [{"type": "text", "text": "Game time scale set to %.2f." % scale}]
+            },
+        ui_meta
     )

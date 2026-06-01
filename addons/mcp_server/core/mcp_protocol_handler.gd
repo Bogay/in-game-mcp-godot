@@ -73,6 +73,8 @@ func _process_single_message(session_id: String, message: Dictionary) -> Variant
     var has_id = message.has("id")
     var id = message.get("id")
     var method = message.get("method", "")
+    if not (method is String):
+        method = ""
     
     # Check if this is a response to a request we sent
     if method == "":
@@ -172,9 +174,12 @@ func _process_single_message(session_id: String, message: Dictionary) -> Variant
         "tools/call":
             if not has_id:
                 return null
-            var params = message.get("params", {})
+            var params = message.get("params")
+            if not (params is Dictionary):
+                params = {}
             var tool_name = params.get("name", "")
-            var arguments = params.get("arguments", {})
+            if not (tool_name is String):
+                tool_name = ""
             
             if tool_name == "":
                 return _make_error_dict(id, -32602, "Invalid params: Missing tool name")
@@ -183,8 +188,16 @@ func _process_single_message(session_id: String, message: Dictionary) -> Variant
                 return _make_error_dict(id, -32601, "Method not found: Tool '%s' is not registered" % tool_name)
                 
             # Merge _meta and session_id into arguments under special key so tools can access context
-            var meta = params.get("_meta", {}).duplicate()
+            var meta = {}
+            var raw_meta = params.get("_meta")
+            if raw_meta is Dictionary:
+                meta = raw_meta.duplicate()
             meta["session_id"] = session_id
+            
+            var arguments = {}
+            var raw_args = params.get("arguments")
+            if raw_args is Dictionary:
+                arguments = raw_args.duplicate()
             arguments["_meta"] = meta
             
             var tool = tool_registry.available_tools[tool_name]
@@ -239,8 +252,12 @@ func _process_single_message(session_id: String, message: Dictionary) -> Variant
         "resources/read":
             if not has_id:
                 return null
-            var params = message.get("params", {})
+            var params = message.get("params")
+            if not (params is Dictionary):
+                params = {}
             var uri = params.get("uri", "")
+            if not (uri is String):
+                uri = ""
             var contents = []
             
             if conformance_mode:
@@ -345,9 +362,15 @@ func _process_single_message(session_id: String, message: Dictionary) -> Variant
         "prompts/get":
             if not has_id:
                 return null
-            var params = message.get("params", {})
+            var params = message.get("params")
+            if not (params is Dictionary):
+                params = {}
             var prompt_name = params.get("name", "")
-            var args = params.get("arguments", {})
+            if not (prompt_name is String):
+                prompt_name = ""
+            var args = params.get("arguments")
+            if not (args is Dictionary):
+                args = {}
             var prompt_messages = []
             
             if conformance_mode:

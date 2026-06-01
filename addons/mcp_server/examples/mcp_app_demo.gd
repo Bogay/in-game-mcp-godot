@@ -1,13 +1,17 @@
 extends Node
 
+@export var bootstrap_server: bool = true
+@export var register_demo_tools: bool = true
+
 func _ready() -> void:
     print("[MCP App Demo] Starting MCP Apps Demonstration environment...")
     
-    # Bind to 0.0.0.0 to allow connection from the host machine via the VM IP
-    MCPServer.bind_address = "0.0.0.0"
-    MCPServer.allowed_hosts = ["*"] # Expose and allow all host headers for demo access
-    MCPServer.stop_server()
-    MCPServer.start_server()
+    if bootstrap_server:
+        # Bind to 0.0.0.0 to allow connection from the host machine via the VM IP
+        MCPServer.bind_address = "0.0.0.0"
+        MCPServer.allowed_hosts = ["*"] # Expose and allow all host headers for demo access
+        MCPServer.stop_server()
+        MCPServer.start_server()
     
     # 1. Register the MCP UI resource
     MCPServer.register_dynamic_resource(
@@ -25,39 +29,40 @@ func _ready() -> void:
         }
     }
     
-    MCPServer.register_function(
-        "app_demo_spawn",
-        "Spawns a mock creature in the active scene.",
-        {
-            "type": "object",
-            "properties": {
-                "enemy_type": { "type": "string", "enum": ["goblin", "orc", "dragon"], "default": "goblin" }
-            }
-        },
-        _on_spawn,
-        ui_meta
-    )
-    
-    MCPServer.register_function(
-        "app_demo_heal",
-        "Restores health to the player character.",
-        {},
-        _on_heal,
-        ui_meta
-    )
-    
-    MCPServer.register_function(
-        "app_demo_slowmo",
-        "Toggles engine time scale (slow motion).",
-        {
-            "type": "object",
-            "properties": {
-                "scale": { "type": "number", "default": 0.5 }
-            }
-        },
-        _on_slowmo,
-        ui_meta
-    )
+    if register_demo_tools:
+        MCPServer.register_function(
+            "app_demo_spawn",
+            "Spawns a mock creature in the active scene.",
+            {
+                "type": "object",
+                "properties": {
+                    "enemy_type": { "type": "string", "enum": ["goblin", "orc", "dragon"], "default": "goblin" }
+                }
+            },
+            _on_spawn,
+            ui_meta
+        )
+        
+        MCPServer.register_function(
+            "app_demo_heal",
+            "Restores health to the player character.",
+            {},
+            _on_heal,
+            ui_meta
+        )
+        
+        MCPServer.register_function(
+            "app_demo_slowmo",
+            "Toggles engine time scale (slow motion).",
+            {
+                "type": "object",
+                "properties": {
+                    "scale": { "type": "number", "default": 0.5 }
+                }
+            },
+            _on_slowmo,
+            ui_meta
+        )
     
     print("[MCP App Demo] Demonstration ready! To test:")
     print("1. Start this scene in Godot.")
@@ -77,8 +82,8 @@ func _get_ui_html() -> String:
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @keyframes pulse-slow {
-            0%, 100% { opacity: 0.2; }
-            50% { opacity: 0.6; }
+            0%%, 100%% { opacity: 0.2; }
+            50%% { opacity: 0.6; }
         }
         .glow { animation: pulse-slow 3s infinite; }
     </style>
@@ -131,7 +136,7 @@ func _get_ui_html() -> String:
             </button>
             <button onclick="callTool('app_demo_slowmo', {scale: 0.2})" 
                     class="bg-gradient-to-br from-indigo-600 to-violet-700 hover:from-indigo-500 hover:to-violet-600 text-white font-medium py-2.5 px-4 rounded-lg shadow-lg hover:shadow-indigo-500/20 active:scale-95 transition-all text-sm">
-                Slow-Mo (20%)
+                Slow-Mo (20%%)
             </button>
         </div>
     </div>

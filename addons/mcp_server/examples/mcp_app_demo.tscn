@@ -1,6 +1,6 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bagud6bjheedt"]
 
-[ext_resource type="Script" path="res://addons/mcp_server/examples/mcp_app_demo.gd" id="1_demo"]
+[ext_resource type="Script" uid="uid://rh33nr47uow7" path="res://addons/mcp_server/examples/mcp_app_demo.gd" id="1_demo"]
 
-[node name="MCPAppDemo" type="Node"]
+[node name="MCPAppDemo" type="Node" unique_id=1424876278]
 script = ExtResource("1_demo")
