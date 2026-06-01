@@ -11,6 +11,7 @@ signal resources_changed()
 @export_enum("WebSocket", "SSE") var transport: String = "SSE"
 @export var port: int = 9090
 @export var bind_address: String = "127.0.0.1"
+@export var allowed_hosts: PackedStringArray = ["localhost", "127.0.0.1", "[::1]", "::1"]
 @export var auto_start: bool = true
 @export var conformance_mode: bool = false:
     set(val):
@@ -48,6 +49,7 @@ var connected_peers: Array:
         return []
 
 func _ready() -> void:
+    _load_config()
     protocol_handler.conformance_mode = conformance_mode
     
     # 1. Wire internal component signals up to the Autoload's public signals
@@ -69,6 +71,52 @@ func _ready() -> void:
     # 2. Automatically start the server if configured
     if auto_start:
         start_server()
+
+func _load_config() -> void:
+    # 1. Load from ProjectSettings if defined
+    if ProjectSettings.has_setting("mcp_server/transport"):
+        transport = ProjectSettings.get_setting("mcp_server/transport")
+    if ProjectSettings.has_setting("mcp_server/port"):
+        port = ProjectSettings.get_setting("mcp_server/port")
+    if ProjectSettings.has_setting("mcp_server/bind_address"):
+        bind_address = ProjectSettings.get_setting("mcp_server/bind_address")
+    if ProjectSettings.has_setting("mcp_server/allowed_hosts"):
+        allowed_hosts = ProjectSettings.get_setting("mcp_server/allowed_hosts")
+    if ProjectSettings.has_setting("mcp_server/auto_start"):
+        auto_start = ProjectSettings.get_setting("mcp_server/auto_start")
+    if ProjectSettings.has_setting("mcp_server/conformance_mode"):
+        conformance_mode = ProjectSettings.get_setting("mcp_server/conformance_mode")
+
+    # 2. Load from Environment Variables (higher priority)
+    if OS.has_environment("MCP_TRANSPORT"):
+        transport = OS.get_environment("MCP_TRANSPORT")
+    if OS.has_environment("MCP_PORT"):
+        port = OS.get_environment("MCP_PORT").to_int()
+    if OS.has_environment("MCP_BIND_ADDRESS"):
+        bind_address = OS.get_environment("MCP_BIND_ADDRESS")
+    if OS.has_environment("MCP_ALLOWED_HOSTS"):
+        allowed_hosts = OS.get_environment("MCP_ALLOWED_HOSTS").split(",")
+    if OS.has_environment("MCP_AUTO_START"):
+        auto_start = OS.get_environment("MCP_AUTO_START").to_lower() in ["true", "1", "yes"]
+    if OS.has_environment("MCP_CONFORMANCE_MODE"):
+        conformance_mode = OS.get_environment("MCP_CONFORMANCE_MODE").to_lower() in ["true", "1", "yes"]
+
+    # 3. Load from Command-line Arguments (highest priority)
+    for arg in OS.get_cmdline_args():
+        if arg.begins_with("--mcp-transport="):
+            transport = arg.substr("--mcp-transport=".length())
+        elif arg.begins_with("--mcp-port="):
+            port = arg.substr("--mcp-port=".length()).to_int()
+        elif arg.begins_with("--mcp-bind-address="):
+            bind_address = arg.substr("--mcp-bind-address=".length())
+        elif arg.begins_with("--mcp-allowed-hosts="):
+            allowed_hosts = arg.substr("--mcp-allowed-hosts=".length()).split(",")
+        elif arg.begins_with("--mcp-auto-start="):
+            var val = arg.substr("--mcp-auto-start=".length()).to_lower()
+            auto_start = val in ["true", "1", "yes"]
+        elif arg.begins_with("--mcp-conformance-mode="):
+            var val = arg.substr("--mcp-conformance-mode=".length()).to_lower()
+            conformance_mode = val in ["true", "1", "yes"]
 
 func _process(_delta: float) -> void:
     if active_transport:

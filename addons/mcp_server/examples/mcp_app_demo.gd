@@ -5,6 +5,7 @@ func _ready() -> void:
     
     # Bind to 0.0.0.0 to allow connection from the host machine via the VM IP
     MCPServer.bind_address = "0.0.0.0"
+    MCPServer.allowed_hosts = ["*"] # Expose and allow all host headers for demo access
     MCPServer.stop_server()
     MCPServer.start_server()
     

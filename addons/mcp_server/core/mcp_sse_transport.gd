@@ -303,25 +303,22 @@ func send_to_client(session_id: String, message: Dictionary) -> void:
     _send_to_sse(session_id, message)
 
 func _validate_host_and_origin(client: Dictionary) -> bool:
-    # DNS rebinding checks are strictly required only under conformance testing.
-    # Outside conformance mode, we allow external LAN/bridge IP connections.
-    if MCPServer.conformance_mode:
-        var host_val = client.get("host", "") as String
-        var origin_val = client.get("origin", "") as String
+    var host_val = client.get("host", "") as String
+    var origin_val = client.get("origin", "") as String
+    
+    if host_val != "" and not _is_allowed_host(host_val):
+        return false
+    if origin_val != "" and not _is_allowed_host(origin_val):
+        return false
         
-        if host_val != "" and not _is_valid_localhost_value(host_val):
-            return false
-        if origin_val != "" and not _is_valid_localhost_value(origin_val):
-            return false
-            
     return true
 
-func _is_valid_localhost_value(val: String) -> bool:
+func _is_allowed_host(val: String) -> bool:
     var clean = val.strip_edges().to_lower()
     if clean == "":
         return true
         
-    # Strip scheme if present (e.g. Origin: http://localhost:9090)
+    # Strip scheme if present
     if clean.begins_with("http://"):
         clean = clean.substr(7)
     elif clean.begins_with("https://"):
@@ -340,9 +337,14 @@ func _is_valid_localhost_value(val: String) -> bool:
         if colon != -1:
             host_part = clean.substr(0, colon)
             
-    # Remove brackets for comparison if they exist
+    # Remove brackets for comparison
     var host_unbracketed = host_part
     if host_part.begins_with("[") and host_part.ends_with("]"):
         host_unbracketed = host_part.substr(1, host_part.length() - 2)
         
-    return host_part == "localhost" or host_part == "127.0.0.1" or host_part == "[::1]" or host_part == "::1" or host_unbracketed == "::1"
+    for allowed in MCPServer.allowed_hosts:
+        var allowed_clean = allowed.strip_edges().to_lower()
+        if allowed_clean == "*" or host_part == allowed_clean or host_unbracketed == allowed_clean:
+            return true
+            
+    return false
