@@ -46,7 +46,7 @@ var log_text: RichTextLabel
 func _ready() -> void:
 	# 1. Setup play area background
 	var bg = ColorRect.new()
-	bg.color = Color(0.1, 0.12, 0.15)
+	bg.color = Color(0.18, 0.28, 0.15) # Grass Green Theme
 	bg.size = Vector2(play_area_width, screen_height)
 	add_child(bg)
 	
@@ -367,8 +367,8 @@ func _simulate_units(delta: float) -> void:
 
 # --- Drawing Utilities (Glow selection rings, dash paths, resources) ---
 func _draw() -> void:
-	# A. Draw play area grid
-	var grid_color = Color(0.15, 0.18, 0.22)
+	# A. Draw play area grid (subtle grassland lines)
+	var grid_color = Color(0.22, 0.33, 0.18)
 	for x in range(0, int(play_area_width), 50):
 		draw_line(Vector2(x, 0), Vector2(x, screen_height), grid_color, 1.0)
 	for y in range(0, int(screen_height), 50):
@@ -396,59 +396,127 @@ func _draw() -> void:
 		
 	# D. Draw Resource Nodes
 	for res in resource_container.get_children():
-		var color = Color(0.0, 0.6, 0.3) # Tree
-		var radius = 8.0
 		if res.resource_type == "gold_mine":
-			color = Color(1.0, 0.75, 0.0)
-			radius = 14.0
-			# Draw mine shape (hexagon)
-			_draw_polygon_node(res.position, radius, 6, color)
+			# Draw rocky grey outcrop
+			_draw_polygon_node(res.position, 16.0, 5, Color(0.42, 0.42, 0.45))
+			# Draw gold nuggets inside
+			draw_rect(Rect2(res.position + Vector2(-8, -4), Vector2(5, 4)), Color(1.0, 0.8, 0.0), true)
+			draw_rect(Rect2(res.position + Vector2(2, 2), Vector2(6, 4)), Color(1.0, 0.8, 0.0), true)
+			draw_circle(res.position + Vector2(-2, 6), 3.0, Color(1.0, 0.8, 0.0))
+			# Draw shiny sparkles (tiny white circles)
+			draw_circle(res.position + Vector2(-6, -6), 1.5, Color(1.0, 1.0, 1.0))
+			draw_circle(res.position + Vector2(4, -4), 1.5, Color(1.0, 1.0, 1.0))
+			
 		elif res.resource_type == "berry_bush":
-			color = Color(0.8, 0.1, 0.2)
-			radius = 10.0
-			draw_circle(res.position, radius, color)
-			draw_circle(res.position + Vector2(-3,-3), 3, Color(0.9, 0.2, 0.3))
-			draw_circle(res.position + Vector2(3,3), 3.5, Color(0.9, 0.2, 0.3))
+			# Draw dense dark green bush circles
+			draw_circle(res.position + Vector2(-6, 2), 9.0, Color(0.08, 0.35, 0.15))
+			draw_circle(res.position + Vector2(6, 2), 9.0, Color(0.08, 0.35, 0.15))
+			draw_circle(res.position + Vector2(0, -4), 10.0, Color(0.1, 0.4, 0.2))
+			# Draw bright red berry dots
+			draw_circle(res.position + Vector2(-5, -2), 3.0, Color(0.9, 0.1, 0.1))
+			draw_circle(res.position + Vector2(5, -2), 3.5, Color(0.9, 0.1, 0.1))
+			draw_circle(res.position + Vector2(0, 4), 3.0, Color(0.9, 0.1, 0.1))
+			draw_circle(res.position + Vector2(-1, -8), 2.5, Color(0.9, 0.1, 0.1))
+			
 		else: # Tree
-			draw_circle(res.position, radius, color)
-			draw_circle(res.position + Vector2(0, -6), radius * 0.8, color.lightened(0.1))
-			draw_circle(res.position + Vector2(-5, 2), radius * 0.7, color.darkened(0.1))
-			draw_circle(res.position + Vector2(5, 2), radius * 0.7, color.darkened(0.1))
+			# Draw brown trunk
+			draw_rect(Rect2(res.position + Vector2(-3, 2), Vector2(6, 12)), Color(0.4, 0.25, 0.1), true)
+			# Draw layered green canopy
+			draw_circle(res.position + Vector2(0, -4), 10.0, Color(0.1, 0.45, 0.15))
+			draw_circle(res.position + Vector2(0, -10), 8.0, Color(0.15, 0.55, 0.2))
+			draw_circle(res.position + Vector2(-6, -2), 7.0, Color(0.08, 0.4, 0.12))
+			draw_circle(res.position + Vector2(6, -2), 7.0, Color(0.08, 0.4, 0.12))
 			
 		# Quantity label
-		draw_string(ThemeDB.fallback_font, res.position + Vector2(-15, radius + 14), str(int(res.amount)), HORIZONTAL_ALIGNMENT_CENTER, 30, 9, Color(0.7, 0.7, 0.7))
+		var radius = 14.0 if res.resource_type == "gold_mine" else 10.0
+		draw_string(ThemeDB.fallback_font, res.position + Vector2(-15, radius + 14), str(int(res.amount)), HORIZONTAL_ALIGNMENT_CENTER, 30, 9, Color(0.85, 0.85, 0.85))
 
 	# E. Draw Buildings
 	for bld in building_container.get_children():
 		var p_color = players[bld.owner_id]["color"]
-		var size = Vector2(64, 64) if bld.building_type == "town_center" else (Vector2(48, 48) if bld.building_type == "barracks" else Vector2(32, 32))
-		var rect = Rect2(bld.position - size / 2.0, size)
 		
-		# Draw building base
-		var base_color = Color(0.25, 0.25, 0.28)
-		if bld.is_under_construction:
-			base_color = Color(0.18, 0.15, 0.12)
-		draw_rect(rect, base_color, true)
-		
-		# Trim border matching owner color
-		draw_rect(rect, p_color, false, 2.0 if bld.is_under_construction else 3.5)
-		
-		# Type labels/decorations
-		var label = "TC" if bld.building_type == "town_center" else ("Barks" if bld.building_type == "barracks" else "Hse")
-		draw_string(ThemeDB.fallback_font, bld.position + Vector2(0, 4), label, HORIZONTAL_ALIGNMENT_CENTER, -1, 10, Color(0.9, 0.9, 0.9))
-		
-		# Construction/Spawning bar
+		if bld.building_type == "town_center":
+			# TC Keep structure
+			var size = Vector2(64, 64)
+			var rect = Rect2(bld.position - size / 2.0, size)
+			
+			# Towers
+			draw_rect(Rect2(bld.position + Vector2(-32, -32), Vector2(16, 64)), Color(0.5, 0.5, 0.53), true) # Left
+			draw_rect(Rect2(bld.position + Vector2(16, -32), Vector2(16, 64)), Color(0.5, 0.5, 0.53), true) # Right
+			# Main Castle Hall
+			draw_rect(Rect2(bld.position + Vector2(-16, -16), Vector2(32, 48)), Color(0.4, 0.4, 0.43), true)
+			# Towers crenellations/borders
+			draw_rect(Rect2(bld.position + Vector2(-32, -32), Vector2(16, 64)), p_color, false, 2.0)
+			draw_rect(Rect2(bld.position + Vector2(16, -32), Vector2(16, 64)), p_color, false, 2.0)
+			draw_rect(Rect2(bld.position + Vector2(-16, -16), Vector2(32, 48)), p_color, false, 2.0)
+			
+			# Conical roofs
+			_draw_polygon_node(bld.position + Vector2(-24, -38), 10.0, 3, p_color)
+			_draw_polygon_node(bld.position + Vector2(24, -38), 10.0, 3, p_color)
+			
+			# Door
+			draw_rect(Rect2(bld.position + Vector2(-8, 16), Vector2(16, 16)), Color(0.3, 0.2, 0.1), true)
+			# Flag pole & Owner Flag
+			draw_line(bld.position + Vector2(0, -16), bld.position + Vector2(0, -42), Color(0.8, 0.8, 0.8), 2.0)
+			var flag_points = PackedVector2Array([
+				bld.position + Vector2(0, -42),
+				bld.position + Vector2(12, -36),
+				bld.position + Vector2(0, -30)
+			])
+			draw_colored_polygon(flag_points, p_color)
+			
+		elif bld.building_type == "barracks":
+			var size = Vector2(48, 48)
+			var rect = Rect2(bld.position - size / 2.0, size)
+			# Main Hall (wood siding)
+			draw_rect(rect, Color(0.55, 0.45, 0.35), true)
+			draw_rect(rect, p_color, false, 2.5)
+			# Pitched roof
+			var roof_points = PackedVector2Array([
+				bld.position + Vector2(-24, -24),
+				bld.position + Vector2(0, -42),
+				bld.position + Vector2(24, -24)
+			])
+			draw_colored_polygon(roof_points, Color(0.35, 0.25, 0.15))
+			draw_polyline(roof_points, p_color, 2.5)
+			
+			# Crossed swords on front wall
+			draw_line(bld.position + Vector2(-10, -6), bld.position + Vector2(10, 14), Color(0.9, 0.9, 0.95), 2.0)
+			draw_line(bld.position + Vector2(10, -6), bld.position + Vector2(-10, 14), Color(0.9, 0.9, 0.95), 2.0)
+			draw_circle(bld.position + Vector2(-8, -4), 2.5, Color(0.75, 0.55, 0.1))
+			draw_circle(bld.position + Vector2(8, -4), 2.5, Color(0.75, 0.55, 0.1))
+			
+		else: # House
+			var size = Vector2(32, 32)
+			var rect = Rect2(bld.position - size / 2.0, size)
+			# Log Cabin base
+			draw_rect(rect, Color(0.45, 0.3, 0.2), true)
+			draw_rect(rect, p_color, false, 2.0)
+			# Pitched roof in Player color
+			var roof_points = PackedVector2Array([
+				bld.position + Vector2(-16, -16),
+				bld.position + Vector2(0, -30),
+				bld.position + Vector2(16, -16)
+			])
+			draw_colored_polygon(roof_points, p_color)
+			# Cozy door & glowing window
+			draw_rect(Rect2(bld.position + Vector2(-4, 4), Vector2(8, 12)), Color(0.25, 0.18, 0.1), true)
+			draw_rect(Rect2(bld.position + Vector2(-10, -4), Vector2(6, 6)), Color(0.95, 0.95, 0.4), true)
+			draw_rect(Rect2(bld.position + Vector2(-10, -4), Vector2(6, 6)), Color(0.1, 0.1, 0.1), false, 1.0)
+			
+		# Construction/Spawning progress bar
+		var bar_width = 64.0 if bld.building_type == "town_center" else (48.0 if bld.building_type == "barracks" else 32.0)
 		if bld.is_under_construction:
 			var pct = bld.health / bld.max_health
-			_draw_small_bar(bld.position + Vector2(-size.x/2, -size.y/2 - 8), size.x, pct, Color(0.8, 0.5, 0.1))
+			_draw_small_bar(bld.position + Vector2(-bar_width/2, -bar_width/2 - 12), bar_width, pct, Color(0.8, 0.5, 0.1))
 		elif not bld.spawn_queue.is_empty():
 			var needed = 4.0 if bld.spawn_queue[0] == "villager" else 6.0
 			var pct = bld.spawn_progress / needed
-			_draw_small_bar(bld.position + Vector2(-size.x/2, -size.y/2 - 8), size.x, pct, Color(0.1, 0.7, 0.9))
+			_draw_small_bar(bld.position + Vector2(-bar_width/2, -bar_width/2 - 12), bar_width, pct, Color(0.1, 0.7, 0.9))
 			
 		# Health bar (if damaged or selected)
 		if bld.health < bld.max_health and not bld.is_under_construction or bld in selected_entities:
-			_draw_small_bar(bld.position + Vector2(-size.x/2, size.y/2 + 6), size.x, bld.health / bld.max_health, Color(0.2, 0.9, 0.2))
+			_draw_small_bar(bld.position + Vector2(-bar_width/2, bar_width/2 + 8), bar_width, bld.health / bld.max_health, Color(0.2, 0.9, 0.2))
 
 	# F. Draw Units & Action Lines
 	for unit in unit_container.get_children():
@@ -457,43 +525,84 @@ func _draw() -> void:
 		
 		# Selection glow ring
 		if unit in selected_entities:
-			draw_arc(unit.position, radius + 4.0, 0.0, TAU, 16, Color(1.0, 1.0, 1.0, 0.8), 1.5)
+			draw_arc(unit.position, radius + 5.0, 0.0, TAU, 16, Color(1.0, 1.0, 1.0, 0.85), 1.5)
 			
 		# Action lines
-		if unit.owner_id == 0 or true: # Draw action vectors for observability
-			var line_color = Color(0.8, 0.8, 0.8, 0.3)
-			var target_p = Vector2.ZERO
-			if unit.state == "moving":
-				target_p = unit.target_position
-				line_color = Color(0.2, 0.6, 1.0, 0.35)
-			elif unit.state == "gathering" or unit.state == "returning":
-				var res = _find_entity_by_id(resource_container.get_children(), unit.target_entity_id)
-				if res: target_p = res.position
-				line_color = Color(0.8, 0.7, 0.1, 0.35)
-			elif unit.state == "building":
-				var bld = _find_entity_by_id(building_container.get_children(), unit.target_entity_id)
-				if bld: target_p = bld.position
-				line_color = Color(0.6, 0.4, 0.2, 0.35)
-			elif unit.state == "attacking":
-				var enemy = _find_entity_by_id(unit_container.get_children(), unit.target_entity_id)
-				if not enemy: enemy = _find_entity_by_id(building_container.get_children(), unit.target_entity_id)
-				if enemy: target_p = enemy.position
-				line_color = Color(1.0, 0.1, 0.1, 0.5)
-				
-			if target_p != Vector2.ZERO:
-				draw_line(unit.position, target_p, line_color, 1.0)
-				
-		# Draw unit visual circle
+		var target_p = Vector2.ZERO
+		var line_color = Color(0.8, 0.8, 0.8, 0.3)
+		if unit.state == "moving":
+			target_p = unit.target_position
+			line_color = Color(0.2, 0.6, 1.0, 0.35)
+		elif unit.state == "gathering" or unit.state == "returning":
+			var res = _find_entity_by_id(resource_container.get_children(), unit.target_entity_id)
+			if res: target_p = res.position
+			line_color = Color(0.8, 0.7, 0.1, 0.35)
+		elif unit.state == "building":
+			var bld = _find_entity_by_id(building_container.get_children(), unit.target_entity_id)
+			if bld: target_p = bld.position
+			line_color = Color(0.6, 0.4, 0.2, 0.35)
+		elif unit.state == "attacking":
+			var enemy = _find_entity_by_id(unit_container.get_children(), unit.target_entity_id)
+			if not enemy: enemy = _find_entity_by_id(building_container.get_children(), unit.target_entity_id)
+			if enemy: target_p = enemy.position
+			line_color = Color(1.0, 0.1, 0.1, 0.5)
+			
+		if target_p != Vector2.ZERO:
+			draw_line(unit.position, target_p, line_color, 1.0)
+			
+		# Draw Unit Body
 		draw_circle(unit.position, radius, p_color)
 		
-		# Draw outline ring based on class (Soldier has white/silver armor ring)
-		var ring_color = Color(0.1, 0.1, 0.1) if unit.unit_type == "villager" else Color(0.9, 0.9, 0.95)
-		draw_arc(unit.position, radius, 0.0, TAU, 12, ring_color, 1.5)
-		
+		# Class customizations
+		if unit.unit_type == "villager":
+			# Black outline
+			draw_arc(unit.position, radius, 0.0, TAU, 12, Color(0.1, 0.1, 0.1), 1.2)
+			# Straw Hat (yellow dome & brim)
+			draw_circle(unit.position + Vector2(0, -3), 5.5, Color(0.85, 0.75, 0.4))
+			draw_line(unit.position + Vector2(-6, -2), unit.position + Vector2(6, -2), Color(0.7, 0.6, 0.3), 1.5)
+			
+			# Tool based on task state
+			var tool_color = Color(0.75, 0.75, 0.8)
+			if unit.state == "gathering":
+				if unit.cargo_type == "wood": # Axe
+					draw_line(unit.position + Vector2(4, 2), unit.position + Vector2(10, -4), Color(0.4, 0.25, 0.1), 1.5)
+					draw_rect(Rect2(unit.position + Vector2(8, -6), Vector2(3, 3)), tool_color, true)
+				elif unit.cargo_type == "gold": # Pickaxe
+					draw_line(unit.position + Vector2(4, 2), unit.position + Vector2(10, -4), Color(0.4, 0.25, 0.1), 1.5)
+					draw_arc(unit.position + Vector2(10, -4), 4.0, -PI/2, PI/2, 8, tool_color, 1.5)
+				elif unit.cargo_type == "food": # Sickle
+					draw_line(unit.position + Vector2(4, 2), unit.position + Vector2(8, -2), Color(0.4, 0.25, 0.1), 1.5)
+					draw_arc(unit.position + Vector2(8, -2), 3.0, 0, PI, 8, tool_color, 1.5)
+			elif unit.state == "building": # Hammer
+				draw_line(unit.position + Vector2(4, 2), unit.position + Vector2(10, -4), Color(0.4, 0.25, 0.1), 1.5)
+				draw_rect(Rect2(unit.position + Vector2(8, -7), Vector2(4, 3)), Color(0.35, 0.35, 0.38), true)
+				
+		else: # Soldier
+			# Iron Helmet
+			draw_circle(unit.position + Vector2(0, -3), 6.5, Color(0.7, 0.7, 0.75))
+			draw_arc(unit.position, radius, 0.0, TAU, 12, Color(0.2, 0.2, 0.2), 1.2)
+			# Helmet Plume matching owner color
+			draw_circle(unit.position + Vector2(0, -8), 2.5, p_color)
+			
+			# Shield on left side
+			draw_circle(unit.position + Vector2(-7, 2), 5.0, Color(0.7, 0.7, 0.75))
+			draw_circle(unit.position + Vector2(-7, 2), 3.0, p_color)
+			
+			# Sword pointing right
+			var sword_pos = unit.position + Vector2(6, 2)
+			var sword_target = unit.position + Vector2(14, -4)
+			if unit.state == "attacking":
+				sword_target = unit.position + Vector2(16, 4) # swing down
+			draw_line(sword_pos, sword_target, Color(0.9, 0.9, 0.95), 2.0)
+			# Crossguard
+			var dir = (sword_target - sword_pos).normalized()
+			var perp = Vector2(-dir.y, dir.x)
+			draw_line(sword_pos + dir * 2.0 - perp * 3.0, sword_pos + dir * 2.0 + perp * 3.0, Color(0.7, 0.5, 0.1), 1.5)
+			
 		# Display cargo count for gathering villagers
 		if unit.unit_type == "villager" and unit.cargo_amount > 0:
 			var label = "%d" % int(unit.cargo_amount)
-			draw_string(ThemeDB.fallback_font, unit.position + Vector2(-10, -radius - 3), label, HORIZONTAL_ALIGNMENT_CENTER, 20, 8, Color(0.9, 0.8, 0.3))
+			draw_string(ThemeDB.fallback_font, unit.position + Vector2(-10, -radius - 5), label, HORIZONTAL_ALIGNMENT_CENTER, 20, 8, Color(0.95, 0.85, 0.3))
 			
 		# Combat flash lines
 		if unit.has_meta("attack_flash_t"):
@@ -505,7 +614,7 @@ func _draw() -> void:
 				
 		# Health bar (if damaged or selected)
 		if unit.health < unit.max_health or unit in selected_entities:
-			_draw_small_bar(unit.position + Vector2(-10, radius + 5), 20.0, unit.health / unit.max_health, Color(0.2, 0.9, 0.2))
+			_draw_small_bar(unit.position + Vector2(-10, radius + 6), 20.0, unit.health / unit.max_health, Color(0.2, 0.9, 0.2))
 
 # --- Helper drawing methods ---
 func _draw_polygon_node(center: Vector2, radius: float, sides: int, color: Color) -> void:
@@ -919,6 +1028,44 @@ func _setup_ui() -> void:
 	layout.add_child(players_grid)
 	layout.add_child(HSeparator.new())
 	
+	# Map Legend Section
+	var legend_hdr = Label.new()
+	legend_hdr.text = "Thematic Map Legend"
+	legend_hdr.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	layout.add_child(legend_hdr)
+	
+	var legend_grid = GridContainer.new()
+	legend_grid.columns = 2
+	legend_grid.add_theme_constant_override("h_separation", 15)
+	legend_grid.add_theme_constant_override("v_separation", 4)
+	
+	var legend_items = [
+		["🌲 Tree (Green Canopy)", "Wood resource"],
+		["🪙 Gold Mine (Outcrop)", "Gold resource"],
+		["🍒 Berry Bush (Berries)", "Food resource"],
+		["🏛️ Town Center (Keep)", "Trains Villagers"],
+		["🛡️ Barracks (Crossed Swords)", "Trains Soldiers"],
+		["🏠 House (Pitched Roof)", "Adds +5 Pop Cap"],
+		["🧑‍🌾 Villager (Straw Hat)", "Gathers / Builds"],
+		["⚔️ Soldier (Steel Helmet)", "Attacks / Guards"]
+	]
+	
+	for pair in legend_items:
+		var name_lbl = Label.new()
+		name_lbl.text = pair[0]
+		name_lbl.add_theme_font_size_override("font_size", 10)
+		name_lbl.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+		legend_grid.add_child(name_lbl)
+		
+		var desc_lbl = Label.new()
+		desc_lbl.text = pair[1]
+		desc_lbl.add_theme_font_size_override("font_size", 10)
+		desc_lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+		legend_grid.add_child(desc_lbl)
+		
+	layout.add_child(legend_grid)
+	layout.add_child(HSeparator.new())
+	
 	# Selection Panel
 	selection_title = Label.new()
 	selection_title.text = "No Selection"
@@ -949,7 +1096,7 @@ func _setup_ui() -> void:
 	layout.add_child(logs_hdr)
 	
 	log_text = RichTextLabel.new()
-	log_text.custom_minimum_size = Vector2(0, 220)
+	log_text.custom_minimum_size = Vector2(0, 110)
 	log_text.scroll_active = true
 	log_text.scroll_following = true
 	log_text.autowrap_mode = TextServer.AUTOWRAP_WORD
