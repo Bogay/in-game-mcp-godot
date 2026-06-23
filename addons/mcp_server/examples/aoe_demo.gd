@@ -29,6 +29,8 @@ var selected_entities: Array[Node] = []
 var is_dragging: bool = false
 var drag_start: Vector2 = Vector2.ZERO
 var drag_current: Vector2 = Vector2.ZERO
+var last_selection_ids: Array = []
+var last_placement_mode: bool = false
 
 # --- Construction Placement Mode (Human) ---
 var placement_mode: bool = false
@@ -962,19 +964,49 @@ func _update_ui_displays() -> void:
 	_update_selection_panel()
 
 func _update_selection_panel() -> void:
-	# Clear old buttons
-	for b in action_panel.get_children():
-		action_panel.remove_child(b)
-		b.queue_free()
+	# Check if selection list or placement mode changed
+	var selection_changed = false
+	if placement_mode != last_placement_mode:
+		selection_changed = true
+		last_placement_mode = placement_mode
+		
+	if not selection_changed:
+		# Check if selection size changed
+		if selected_entities.size() != last_selection_ids.size():
+			selection_changed = true
+		else:
+			for i in range(selected_entities.size()):
+				var e = selected_entities[i]
+				if not is_instance_valid(e) or e.get_instance_id() != last_selection_ids[i]:
+					selection_changed = true
+					break
+					
+	if selection_changed:
+		# Clear old buttons
+		for b in action_panel.get_children():
+			action_panel.remove_child(b)
+			b.queue_free()
+			
+		# Cache new selection IDs
+		last_selection_ids.clear()
+		for e in selected_entities:
+			if is_instance_valid(e):
+				last_selection_ids.append(e.get_instance_id())
 		
 	if selected_entities.is_empty():
 		selection_title.text = "No Selection"
 		selection_details.text = "Select units with Left Click/Drag.\nRight Click to command."
 		return
 		
+	if placement_mode:
+		selection_title.text = "Placement Mode Active"
+		selection_details.text = "Click on the grass grid to place %s.\nRight Click to cancel." % placement_type.capitalize()
+		return
+		
 	var first = selected_entities[0]
 	if not is_instance_valid(first):
 		selected_entities.clear()
+		last_selection_ids.clear()
 		return
 		
 	if first is AoEUnit:
@@ -994,7 +1026,7 @@ func _update_selection_panel() -> void:
 			selection_details.text = "Owner: %s\nHealth: %d/%d\nState: %s%s" % [owner_name, int(first.health), int(first.max_health), first.state.capitalize(), cargo_str]
 			
 			# If human villager: show construct buttons
-			if first.owner_id == 0 and first.unit_type == "villager":
+			if selection_changed and first.owner_id == 0 and first.unit_type == "villager":
 				var bh = Button.new()
 				bh.text = "House (50w)"
 				bh.pressed.connect(func(): _start_placement("house", 50))
@@ -1018,7 +1050,7 @@ func _update_selection_panel() -> void:
 		selection_details.text = "Owner: %s\nHealth: %d/%d\nStatus: %s%s" % [owner_name, int(first.health), int(first.max_health), build_state, progress_str]
 		
 		# If human building: show training buttons
-		if first.owner_id == 0 and not first.is_under_construction:
+		if selection_changed and first.owner_id == 0 and not first.is_under_construction:
 			if first.building_type == "town_center":
 				var train_v = Button.new()
 				train_v.text = "Train Villager (50f)"
