@@ -591,11 +591,16 @@ func _input(event: InputEvent) -> void:
 		# B. Left-click Selection Input
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
+				var press_pos = get_local_mouse_position()
+				if press_pos.x >= play_area_width:
+					return # Ignore UI clicks
 				# Start dragging
 				is_dragging = true
-				drag_start = get_local_mouse_position()
+				drag_start = press_pos
 				drag_current = drag_start
 			else:
+				if not is_dragging:
+					return # Ignore release if we didn't start dragging in play area
 				# Stop dragging & resolve selection
 				is_dragging = false
 				drag_current = get_local_mouse_position()
