@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://d3vam8m7n2y4p"]
+
+[ext_resource type="Script" uid="uid://c0tcb3f5n6jd7" path="res://addons/mcp_server/examples/aoe_demo.gd" id="1_aoe_demo"]
+
+[node name="AoEDemoGame" type="Node2D" unique_id=1639512493]
+script = ExtResource("1_aoe_demo")
