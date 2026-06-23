@@ -22,6 +22,10 @@ config/features=PackedStringArray("4.6", "Forward Plus")
 
 MCPServer="*uid://cg258f6e3xmqp"
 
+[display]
+
+window/stretch/mode="viewport"
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/mcp_server/plugin.cfg")
