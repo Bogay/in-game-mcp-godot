@@ -732,8 +732,12 @@ func _deferred_command_units(player_id: int, unit_ids: Array, action: String, ta
 	var resources = resource_container.get_children()
 	var buildings = building_container.get_children()
 	
+	var int_unit_ids = []
+	for uid in unit_ids:
+		int_unit_ids.append(int(uid))
+	
 	for unit in units:
-		if unit.owner_id == player_id and unit.unit_id in unit_ids:
+		if unit.owner_id == player_id and unit.unit_id in int_unit_ids:
 			match action:
 				"move":
 					unit.state = "moving"
