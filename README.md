@@ -2,6 +2,8 @@
 
 A native, high-performance, and event-driven **Model Context Protocol (MCP)** server built inside the Godot 4 engine. This addon exposes the live game state, scene topology, telemetry, visual widgets, and execution hooks to external LLM clients (such as Claude Desktop, Cursor, or custom agents) over both WebSocket and SSE transport layers.
 
+This project is inspired by [InGameMCP](https://github.com/yayapipi/InGameMCP), a Unity in-game MCP server.
+
 ---
 
 ## ✨ Features
